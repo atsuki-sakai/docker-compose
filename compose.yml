@@ -1,0 +1,58 @@
+
+# バージョンを指定
+version: '3'
+
+services:
+  # 作りたいコンテナを記述する。
+  # php-apache環境用コンテナを記述
+  php-app:
+    # コンテナ名
+    container_name: run-php-app
+    # ビルドするDockerfileの場所
+    build: ./app
+    # ポート
+    ports:
+      - "18080:80"
+    # ローカルPCとコンテナ間でディレクトリをバインド(同期)
+    volumes:
+      - ./app/src:/var/www/html/
+    # 利用するネットワークを指定
+    networks:
+      - php-mysql-network
+    depends_on:
+      - php-db
+  # mysql用のコンテナを記述 * Dockerfileを使用しない場合直接イメージを指定できる。
+  php-db:
+    image: mysql:8.0
+    container_name: run-php-db
+    ports:
+      - "3307:3306"
+    # コンテナで使用する環境変数を指定
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_USER=test_user
+      - MYSQL_PASSWORD=test123
+      - MYSQL_DATABASE=test_db
+    volumes:
+      - ./mysql/initdb.d:/docker-entrypoint-initdb.d
+      # mysql-dataは自動で生成される。
+      - mysql-data:/var/lib/mysql
+    networks:
+      - php-mysql-network
+  php-adminer:
+    image: adminer:4.8.1
+    container_name: adminer
+    ports:
+      -  "8081:8080"
+    networks:
+      - php-mysql-network
+    depends_on:
+      - php-db
+
+volumes:
+  # dockerがmysql-dataというボリュームを作ってくれる
+  mysql-data:
+
+networks:
+  php-mysql-network:
+
